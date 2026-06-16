@@ -1,52 +1,6 @@
 # Lab 2 - Hello HTTP + JSON
 
-In Lab 1, you worked directly with a TCP socket and created a small command-based server.
-
-In this lab, you will move up one layer and build a small HTTP JSON service. Instead of inventing your own command format, you will use HTTP methods, paths, status codes, headers, and JSON request/response bodies.
-
-## Learning Goals
-
-By the end of this lab, you should be able to:
-
-* Explain the difference between a raw TCP message and an HTTP request.
-* Create a basic HTTP server in Node.js.
-* Read the HTTP method and request path.
-* Parse a JSON request body.
-* Return JSON responses.
-* Use appropriate HTTP status codes.
-* Handle invalid or unexpected client input without crashing the server.
-* Test HTTP request-handling behavior.
-
-## Starter Code Structure
-
-The starter code is located in:
-
-```text
-labs/lab02-http-json/starter/
-```
-
-The starter project has this structure:
-
-```text
-starter/
-├── package.json
-├── src/
-│   └── server.js
-└── test/
-    └── server.test.js
-```
-
-### File Descriptions
-
-| File                  | Purpose                                                    |
-| --------------------- | ---------------------------------------------------------- |
-| `src/server.js`       | Starts the HTTP server and handles incoming HTTP requests. |
-| `test/server.test.js` | Contains automated tests for the HTTP JSON service.        |
-| `package.json`        | Defines project metadata, dependencies, and npm scripts.   |
-
-## Required Features
-
-Your HTTP server must support the following routes.
+## Protocol
 
 ### `GET /health`
 
@@ -80,9 +34,39 @@ Example response:
 }
 ```
 
+### `POST /uppercase`
+
+An added route as part of the **Graduate Extension.** Identical to `/echo`, but makes the value of the `"message": "text"` key/value pair in the JSON response body uppercase.
+
+Example request body:
+
+```json
+{
+  "message": "hello"
+}
+```
+
+Example response:
+
+```json
+{
+  "message": "HELLO"
+}
+```
+
 ### `POST /calculate`
 
 Accepts a JSON request body with an operation and two numbers.
+
+Supports the following operations:
+
+| Operation  | Meaning               |
+| ---------- | --------------------- |
+| `add`      | Add `a` and `b`       |
+| `subtract` | Subtract `b` from `a` |
+| `multiply` | Multiply `a` and `b`  |
+| `divide`   | Divide `a` by `b`     |
+| `negate`   | Negates `a`           |
 
 Example request body:
 
@@ -102,59 +86,42 @@ Example response:
 }
 ```
 
-Your server must support at least the following operations:
+**Graduate Extension:**
 
-| Operation  | Meaning               |
-| ---------- | --------------------- |
-| `add`      | Add `a` and `b`       |
-| `subtract` | Subtract `b` from `a` |
-| `multiply` | Multiply `a` and `b`  |
-| `divide`   | Divide `a` by `b`     |
+Added a `negate` method.
 
-The server should return an error response for unsupported operations.
+Request Body:
+
+```json
+{
+    "operation": "negate",
+    "a": 7
+}
+```
+
+Response:
+
+```json
+{
+    "result": -7
+}
+```
+
+The server returns an error response for unsupported operations.
 
 ### `GET /requests`
 
 Returns information about how many requests the server has handled since it started.
 
-Example response:
+**Graduate Extension:**
+
+Tracks the requests by which route was invoked. Consider the following example response body.
 
 ```json
 {
-  "count": 4
-}
-```
-
-## Error Handling
-
-Your server should not crash when it receives bad input.
-
-At minimum, your server should handle:
-
-* Unknown routes.
-* Unsupported HTTP methods.
-* Invalid JSON.
-* Missing required fields.
-* Unsupported calculation operations.
-* Division by zero.
-
-Use reasonable HTTP status codes such as:
-
-| Status Code | Meaning               |
-| ----------- | --------------------- |
-| `200`       | OK                    |
-| `400`       | Bad request           |
-| `404`       | Not found             |
-| `405`       | Method not allowed    |
-| `500`       | Internal server error |
-
-Error responses should be returned as JSON.
-
-Example error response:
-
-```json
-{
-  "error": "Invalid JSON"
+  "/echo": 3,
+  "/requests": 1,
+  "/calculate": 8
 }
 ```
 
@@ -236,9 +203,7 @@ Run the tests from the starter directory:
 npm test
 ```
 
-Some tests may fail when you first receive the starter code. Your job is to update the implementation until the required tests pass.
-
-The tests should check behavior such as:
+The tests check behavior such as:
 
 * `GET /health` returns a JSON status response.
 * `POST /echo` returns the submitted JSON data.
@@ -247,64 +212,55 @@ The tests should check behavior such as:
 * Invalid JSON returns an error.
 * The server does not crash on bad input.
 
-You may also run the tests in watch mode if supported by the starter project:
+**Graduate Extension:**
 
-```bash
-npm run test:watch
-```
-
-## Suggested Workflow
-
-1. Run the server before changing anything.
-2. Try `GET /health` manually in a browser or with `curl`.
-3. Run the automated tests.
-4. Open `src/server.js`.
-5. Implement one route at a time.
-6. Run `npm test` after each change.
-7. Test manually with `curl`.
-8. Update this README if your final behavior differs from the examples.
+Tests also check the following:
+- New `GET /requests` body format
+    - Rather than checking for the `count` key, `/requests` returns key/value pairs where each key is a URL/"route" and the value is the number of requests to that route so far.
+    - The test loops through all the URLs accessed, determines if `/requests` counted them, and ensures those count values are numbers.
+- New `POST /calculate` operation (`negate`)
+- New `POST /uppercase` route
 
 ## Reflection Questions
 
-Answer the following questions in your submission:
-
 1. What is the difference between a TCP message and an HTTP request?
+
+    - TCP messages send raw bytes across the client/server connection.
+    
+    - HTTP requests have a particular structure, in addition to the rules TCP lays out for its usage (because HTTP exists on top of TCP).
+
+    - For example, HTTP requests need a `Host` header. Without it, the request is invalid according to HTTP. It also has other formatting necessities like a valid method (`POST`, `GET`, etc).
+
+    - Basically, HTTP has more rules for sending requests than TCP has for sending messages.
+
 2. What does the `Content-Type: application/json` header tell the server?
+
+    - Originally I would have said that it tells the server the request is a POST request, or has the POST method to be more precise.
+
+    - However, the `method: "POST"` key/value pair is already included in the request.
+    
+    - So, while the titular question's header is merely another indication to the reader that it's a POST request, for the server it specifies the data that the client wants the server to use in processing the request.
+
 3. Why should a server return different HTTP status codes for different situations?
+
+    - To inform the client how their request was processed.
+
+    - It may be unclear based on the response body whether the client request was processed successfully or not, and the nature of that success or failure.
+    
+    - Status codes are clear indications by the developer as to how the server handled the client's request.
+
 4. What happens if the client sends invalid JSON?
+
+    - It depends on how the server is programmed to respond.
+    
+    - In this lab, my POST requests reject invalid JSON with a 400 status code.
+
+    - However, other servers may not anticipate invalid JSON and their scripts will just crash, requiring a server restart.
+
 5. How is this lab different from Lab 1?
 
-## Graduate Students
+    - Rather than accepting TCP messages, the server expects HTTP requests.
 
-Graduate students should complete one additional feature.
+    - TCP messages require some clientside setup (client.js in lab 1) because a socket first needs to be used to send messages through.
 
-Choose one of the following:
-
-1. Add a new route, such as `GET /time` or `POST /uppercase`.
-2. Add one additional calculation operation and document it.
-3. Improve the request counter so it tracks counts by route.
-4. Add additional automated tests for error handling.
-
-Document your graduate extension in your submission.
-
-## Submission
-
-Submit your completed lab according to the course submission instructions.
-
-Your submission should include:
-
-* Your updated source code.
-* Your completed HTTP JSON server.
-* Your updated README if you changed or extended the API.
-* Your answers to the reflection questions.
-* Any graduate extension work, if applicable.
-
-Before submitting, verify that:
-
-```bash
-npm test
-```
-
-runs successfully.
-
-Submit your GitHub link in the Canvas assignment for this lab.
+    - HTTP presumably handles this at request time, allowing us to use a single curl command in the terminal rather than needing a clientside script.

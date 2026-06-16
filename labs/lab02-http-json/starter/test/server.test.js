@@ -28,9 +28,19 @@ afterEach(async () => {
     });
 });
 
+let routesToCheckRequests = [];
+
+async function appendToRequestsCheckIfValidRoute(path, responseStatus) {
+    if (responseStatus != 404 && !routesToCheckRequests.includes(path)) {
+        routesToCheckRequests.push(path);
+    }
+}
+
 async function getJson(path) {
     const response = await fetch(`${baseUrl}${path}`);
     const body = await response.json();
+
+    appendToRequestsCheckIfValidRoute(path, response.status);
 
     return {
         status: response.status,
@@ -49,6 +59,8 @@ async function postJson(path, data) {
 
     const body = await response.json();
 
+    appendToRequestsCheckIfValidRoute(path, response.status);
+
     return {
         status: response.status,
         body
@@ -65,6 +77,7 @@ async function postRaw(path, rawBody) {
     });
 
     const body = await response.json();
+    appendToRequestsCheckIfValidRoute(path, response.status);
 
     return {
         status: response.status,
@@ -105,6 +118,17 @@ describe("Lab 2 HTTP JSON server", () => {
 
         expect(result.status).toBe(400);
         expect(result.body).toHaveProperty("error");
+    });
+
+    test("POST /uppercase returns the submitted JSON body like /echo, but uppercase", async () => {
+        const result = await postJson("/uppercase", {
+            message: "hello"
+        });
+
+        expect(result.status).toBe(200);
+        expect(result.body).toEqual({
+            message: "HELLO"
+        });
     });
 
     test("POST /calculate can add two numbers", async () => {
@@ -159,6 +183,18 @@ describe("Lab 2 HTTP JSON server", () => {
         });
     });
 
+    test("POST /calculate can negate a number", async () => {
+        const result = await postJson("/calculate", {
+            operation: "negate",
+            a: 7
+        });
+
+        expect(result.status).toBe(200);
+        expect(result.body).toEqual({
+            result: -7
+        });
+    });
+
     test("POST /calculate rejects division by zero", async () => {
         const result = await postJson("/calculate", {
             operation: "divide",
@@ -202,14 +238,24 @@ describe("Lab 2 HTTP JSON server", () => {
         expect(result.body).toHaveProperty("error");
     });
 
-    test("GET /requests returns a request count", async () => {
-        await getJson("/health");
+    test("GET /requests returns a request count for valid routes", async () => {
+        await getJson("/health"); // why was this here before?
+        // i suppose so that the count value would be >= 2, but we go by route now.
         const result = await getJson("/requests");
 
         expect(result.status).toBe(200);
-        expect(result.body).toHaveProperty("count");
-        expect(typeof result.body.count).toBe("number");
-        expect(result.body.count).toBeGreaterThanOrEqual(2);
+        for (const key in result.body) {
+            // console.log(key, "test 1:", routesToCheckRequests.includes(key), "test 2:", typeof result.body[key]);
+            expect(routesToCheckRequests.includes(key)).toBe(true);
+            expect(typeof result.body[key]).toBe("number");
+        }
+        expect(result.body["/health"]).toBe(1);
+        expect(result.body["/requests"]).toBe(1);
+
+        // old tests
+        // expect(result.body).toHaveProperty("count");
+        // expect(typeof result.body.count).toBe("number");
+        // expect(result.body.count).toBeGreaterThanOrEqual(2);
     });
 });
 

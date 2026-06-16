@@ -47,7 +47,6 @@ async function handleRequest(req, res) {
 
     if (req.method === "POST" && req.url === "/echo") {
         const rawBody = await readRequestBody(req);
-
         try {
             const parsedBody = JSON.parse(rawBody);
 
