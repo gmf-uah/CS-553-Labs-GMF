@@ -115,7 +115,7 @@ Returns information about how many requests the server has handled since it star
 
 **Graduate Extension:**
 
-Tracks the requests by which route was invoked. Consider the following example response body.
+Tracks the requests by which route was invoked. Consider the following example response body:
 
 ```json
 {
