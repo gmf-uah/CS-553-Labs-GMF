@@ -1,5 +1,6 @@
 import express from "express";
 import { request } from "http";
+import cors from 'cors'; // needed to make the OpenAPI extension's request functionality work
 
 let invalidItemSpecErr = "Invalid item specification. Ensure quantity is a number >= 0, and name is a non-empty string."
 let itemNotFoundErr = "Item not found"
@@ -19,6 +20,7 @@ export function createApp() {
     const app = express();
 
     app.use(express.json());
+    app.use(cors());
 
     // Starter data. This data is stored in memory and will reset when the
     // server restarts.
@@ -34,7 +36,7 @@ export function createApp() {
     }
 
     function checkForItemIdAndThen(id, res, succeed) {
-        id = Number(id) // id starts off as a string
+        id = Number(id) // id starts off as a string, as all `req.params` do
         // console.log(id)
         // if the `Number` call fails to convert `id` from string to number, ...
         // ... then js treats `id` as NaN, and so we make that part of the type check

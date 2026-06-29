@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Lab 3 Item API
   version: 1.0.0
-  description: TODO - briefly describe this API.
+  description: Create, retrieve, update, and delete items. Also check server health.
 
 servers:
   - url: http://localhost:3000
