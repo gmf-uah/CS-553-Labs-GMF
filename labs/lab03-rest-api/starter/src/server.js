@@ -1,21 +1,7 @@
 import express from "express";
 import { request } from "http";
 
-// Implement type checking along with sanity checks per the graduate feature.
-function itemHasValidNameAndQuantity(requestBody) {
-    let name = requestBody.name
-    let quantity = requestBody.quantity
-    return typeof name == "string"
-        && typeof quantity == "number"
-        && name.length != 0
-        && quantity >= 0
-}
-
-let invalidItemSpecErr = `Invalid item specification.
-    Ensure the name and quantity fields exist, and that
-    the name field is a string with at least 1 character,
-    and the quantity field is a number that is at least 0.`
-
+let invalidItemSpecErr = "Invalid item specification. Ensure quantity is a number >= 0, and name is a non-empty string."
 let itemNotFoundErr = "Item not found"
 let invalidIdErr = "Invalid item ID"
 
@@ -32,51 +18,60 @@ export function createApp() {
         { id: 2, name: "mouse", quantity: 5 }
     ];
 
-    function findItemById(id) {
-        // look in the items array for a dictionary with the matching id
-        return items.find(item => item.id === req.body.id)
+    // Implement type checking along with sanity checks per the graduate feature.
+    function itemHasValidNameAndQuantity(requestBody) {
+        let name = requestBody.name
+        let quantity = requestBody.quantity
+        return typeof name == "string"
+            && typeof quantity == "number"
+            && name.length != 0
+            && quantity >= 0
     }
 
-    function checkForItemIdAndThen(id, emitStatus, succeed) {
-        // if (itemHasValidNameAndQuantity(req.body) && typeof req.params.id == "number") {
-        //     let foundItem = findItemById(req.params.id)
-        //     if (foundItem) {
-        //         succeed(foundItem)
-        //     } else {
-        //         res.status(404).json({ error: itemNotFoundErr })
-        //     }
-        // } else {
-        //     res.status(400).json({ error: invalidItemSpecErr })
-        // }
-        if (typeof id == "number") {
-            let foundItem = findItemById(req.params.id)
+    function findItemById(id) {
+        // look in the items array for a dictionary with the matching id
+        return items.find(item => item.id === id)
+    }
+
+    function checkForItemIdAndThen(id, res, succeed) {
+        id = Number(id) // id starts off as a string
+        // console.log(id)
+        // if the `Number` call fails to convert `id` from string to number, ...
+        // ... then js treats `id` as NaN, and so we make that part of the type check
+        // so a typeof check would do nothing here
+        if (!isNaN(id)) {
+            let foundItem = findItemById(id)
             if (foundItem) {
                 succeed(foundItem)
             } else {
-                emitStatus(404).json({ error: itemNotFoundErr })
+                res.status(404).json({ error: itemNotFoundErr })
             }
         } else {
-            emitStatus(400).json({ error: invalidIdErr })
+            res.status(400).json({ error: invalidIdErr })
         }
     }
 
+    // GET health
     app.get("/health", (req, res) => {
         // console.log(req)
         res.json({ status: "ok" });
     });
 
+    // GET all items
     app.get("/items", (req, res) => {
         res.json(items)
     });
 
+    // GET by id
     app.get("/items/:id", (req, res) => {
-        checkForItemIdAndThen(req.body.id, res.status, (foundItem) => {
+        checkForItemIdAndThen(req.params.id, res, (foundItem) => {
             // this function (third argument) is called with the found item
             // but only upon successfully finding them item; otherwise 400 or 404 is emitted.
             res.json(foundItem) // status is 200 unless otherwise specified
         })
     });
 
+    // POST
     app.post("/items", (req, res) => {
         if (itemHasValidNameAndQuantity(req.body)) {
             let newItem = { id: nextId, name: req.body.name, quantity: req.body.quantity }
@@ -88,9 +83,10 @@ export function createApp() {
         }
     });
 
+    // PUT
     app.put("/items/:id", (req, res) => {
         if (itemHasValidNameAndQuantity(req.body)) {
-            checkForItemIdAndThen(req.body.id, res.status, (foundItem) => {
+            checkForItemIdAndThen(req.params.id, res, (foundItem) => {
                 foundItem.name = req.body.name
                 foundItem.quantity = req.body.quantity
                 res.json(foundItem)
@@ -100,11 +96,13 @@ export function createApp() {
         }
     });
 
+    // DELETE
     app.delete("/items/:id", (req, res) => {
-        checkForItemIdAndThen(req.body.id, res.status, (foundItem) => {
+        checkForItemIdAndThen(req.params.id, res, (foundItem) => {
             let index = items.indexOf(foundItem)
             items.splice(index, 1)
-            res.status(204)
+            res.status(204).end() // end means the interaction is over
+            // no response body.
         })
     });
 
