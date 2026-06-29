@@ -1,3 +1,7 @@
+# NOTE
+Other than this note, this README is unchanged from when the lab was assigned.
+To view reflection questions & graduate extension notes, see `./starter/README.md`.
+
 # Lab 3 - REST API with Express
 
 ## Overview

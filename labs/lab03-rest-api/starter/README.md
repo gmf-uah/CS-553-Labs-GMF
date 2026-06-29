@@ -16,7 +16,7 @@ http://localhost:3000
 ## How to Test
 
 ```bash
-npm test
+npm run test
 ```
 
 ## API Routes

@@ -5,6 +5,16 @@ let invalidItemSpecErr = "Invalid item specification. Ensure quantity is a numbe
 let itemNotFoundErr = "Item not found"
 let invalidIdErr = "Invalid item ID"
 
+// Implement type checking along with sanity checks per the graduate feature.
+export function itemHasValidNameAndQuantity(obj) {
+    let name = obj.name
+    let quantity = obj.quantity
+    return typeof name == "string"
+        && typeof quantity == "number"
+        && name.length != 0
+        && quantity >= 0
+}
+
 export function createApp() {
     const app = express();
 
@@ -17,16 +27,6 @@ export function createApp() {
         { id: 1, name: "keyboard", quantity: 10 },
         { id: 2, name: "mouse", quantity: 5 }
     ];
-
-    // Implement type checking along with sanity checks per the graduate feature.
-    function itemHasValidNameAndQuantity(requestBody) {
-        let name = requestBody.name
-        let quantity = requestBody.quantity
-        return typeof name == "string"
-            && typeof quantity == "number"
-            && name.length != 0
-            && quantity >= 0
-    }
 
     function findItemById(id) {
         // look in the items array for a dictionary with the matching id
